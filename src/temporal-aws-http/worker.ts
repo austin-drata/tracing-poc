@@ -8,13 +8,25 @@ import {
   makeWorkflowExporter,
 } from '@temporalio/interceptors-opentelemetry/lib/worker';
 import * as activities from './activities';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
+
+import { config } from 'dotenv';
+config({ path: './.env' });
 
 async function main() {
   const resource = new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'interceptors-sample-worker',
+    [SemanticResourceAttributes.SERVICE_NAME]: 'temporal-worker',
   });
+  diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   // Export spans to console for simplicity
-  const exporter = new ConsoleSpanExporter();
+  // const exporter = new ConsoleSpanExporter();
+  const exporter = new OTLPTraceExporter({
+    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + '/v1/traces',
+    headers: {
+      'DD-API-KEY': process.env.DD_API_KEY,
+    },
+  });
 
   const otel = new NodeSDK({ traceExporter: exporter, resource });
   await otel.start();

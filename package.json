@@ -9,7 +9,8 @@
     "build": "tsc --build",
     "build.watch": "tsc --build --watch",
     "lint": "eslint .",
-    "trace.temporal": "ts-node src/temporal-aws-http/index.ts",
+    "trace.temporal": "ts-node src/temporal-aws-http/client.ts",
+    "worker.trace.temporal": "ts-node src/temporal-aws-http/worker.ts",
     "trace": "ts-node src/otel-aws-http/index.ts",
     "trace.watch": "nodemon src/otel-aws-http/index.ts",
     "trace.temporal.watch": "nodemon src/temporal-aws-http/index.ts"
@@ -27,9 +28,20 @@
     "@opentelemetry/core": "^1.8.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.46.0",
     "@opentelemetry/resources": "^1.8.0",
-    "@opentelemetry/sdk-node": "^0.33.0",
-    "@opentelemetry/sdk-trace-base": "^1.8.0",
-    "dotenv": "^16.3.1"
+    "@opentelemetry/sdk-node": "^0.46.0",
+    "dotenv": "^16.3.1",
+    "dd-trace": "^4.14.0",
+    "@opentelemetry/instrumentation-http": "^0.46.0",
+    "@opentelemetry/instrumentation-aws-sdk": "^0.37.1",
+    "@opentelemetry/sdk-trace-base": "^1.19.0",
+    "@opentelemetry/instrumentation-express": "^0.34.0",
+    "axios": "^1.6.4",
+    "@temporalio/activity": "^1.8.6",
+    "@temporalio/client": "^1.8.6",
+    "@temporalio/interceptors-opentelemetry": "^1.8.6",
+    "@temporalio/worker": "^1.8.6",
+    "@temporalio/workflow": "^1.8.6"
+    
   },
   "devDependencies": {
     "@tsconfig/node18": "^1.0.0",
