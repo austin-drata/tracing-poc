@@ -1,0 +1,45 @@
+{
+  "name": "node-tracing-poc",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:austin-drata/node-tracing-poc.git",
+  "author": "Austin Ruby <austin@drata.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc --build",
+    "build.watch": "tsc --build --watch",
+    "lint": "eslint .",
+    "trace": "ts-node src/index.ts",
+    "trace.watch": "nodemon src/index.ts"
+  },
+  "nodemonConfig": {
+    "execMap": {
+      "ts": "ts-node"
+    },
+    "ext": "ts",
+    "watch": [
+      "src"
+    ]
+  },
+  "dependencies": {
+    "@opentelemetry/core": "^1.8.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.46.0",
+    "@opentelemetry/resources": "^1.8.0",
+    "@opentelemetry/sdk-node": "^0.33.0",
+    "@opentelemetry/sdk-trace-base": "^1.8.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node18": "^1.0.0",
+    "@types/node": "^16.11.43",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-deprecation": "^1.2.1",
+    "nodemon": "^2.0.12",
+    "prettier": "^2.8.8",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.2.2"
+  }
+}
