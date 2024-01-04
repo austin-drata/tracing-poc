@@ -9,8 +9,10 @@
     "build": "tsc --build",
     "build.watch": "tsc --build --watch",
     "lint": "eslint .",
-    "trace": "ts-node src/index.ts",
-    "trace.watch": "nodemon src/index.ts"
+    "trace.temporal": "ts-node src/temporal-aws-http/index.ts",
+    "trace": "ts-node src/otel-aws-http/index.ts",
+    "trace.watch": "nodemon src/otel-aws-http/index.ts",
+    "trace.temporal.watch": "nodemon src/temporal-aws-http/index.ts"
   },
   "nodemonConfig": {
     "execMap": {

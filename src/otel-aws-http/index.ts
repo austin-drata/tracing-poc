@@ -23,6 +23,8 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+
+
 async function main() {
     await otel.start();
     const tracer = trace.getTracer('example-tracer');
