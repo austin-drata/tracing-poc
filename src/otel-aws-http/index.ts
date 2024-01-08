@@ -10,6 +10,8 @@ import axios from 'axios';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
+import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 
 config({ path: './.env' });
 const resource = new Resource({
@@ -22,7 +24,6 @@ const resource = new Resource({
 //     'DD-API-KEY': process.env.DD_API_KEY,
 //   },
 // });
-
 
 const exporter = new ConsoleSpanExporter();
 
@@ -45,11 +46,15 @@ const exporter = new ConsoleSpanExporter();
 const otel = new NodeSDK({
   traceExporter: exporter,
   resource,
-  instrumentations: [new HttpInstrumentation(), new ExpressInstrumentation()],
+  instrumentations: [
+    new HttpInstrumentation(),
+    new ExpressInstrumentation(),
+    new AwsInstrumentation({
+      suppressInternalInstrumentation: true,
+    }),
+  ],
   spanProcessor: new BatchSpanProcessor(exporter),
 });
-
-
 
 async function main() {
   await otel.start();
@@ -59,29 +64,28 @@ async function main() {
   await sleep(5000);
 
   // await tracer.startActiveSpan('parent-span', async (parentSpan: Span) => {
-    // console.log('context with parent span')
-    // console.log(context.active())
+  // console.log('context with parent span')
+  // console.log(context.active())
 
-    await sleep(sleepTime)
+  await sleep(sleepTime);
 
-    // axiosCall();
+  // axiosCall();
 
-    // await tracer.startActiveSpan('child-span', async childSpan => {
-      httpCall();
-      // console.log('childSpan')
-      // // console.log(childSpan);
-      // console.log('context after child span')
-      // console.log(context.active())
-      await sleep(sleepTime)
-    //   childSpan.end()
-    // })
-    
-    // parentSpan.end()
+  // await tracer.startActiveSpan('child-span', async childSpan => {
+  httpCall();
+  // console.log('childSpan')
+  // // console.log(childSpan);
+  // console.log('context after child span')
+  // console.log(context.active())
+  await sleep(sleepTime);
+  //   childSpan.end()
+  // })
+
+  // parentSpan.end()
   // });
 
-  
-
-
+  const respon = await awsCall();
+  console.log(respon);
 
   // const ctxWithRootSpan = trace.setSpan(context.active(), rootSpan);
   // const childSpan = tracer.startSpan('child-span', {}, ctxWithRootSpan);
@@ -94,14 +98,31 @@ async function main() {
   await otel.shutdown();
 }
 
-const sleepTime = 1000; 
+const sleepTime = 1000;
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function httpCall() {
-  https.get('https://swapi.dev/api/people/1', (response) => {console.log(response)});
+  https.get('https://swapi.dev/api/people/1', (response) => {
+    console.log(response);
+  });
+}
+
+async function awsCall() {
+  const client = new S3Client({
+    region: 'us-west-2',
+    credentials: {
+      accessKeyId: process.env.ACCESS_KEY_ID,
+      secretAccessKey: process.env.SECRET_ACCESSS_KEY,
+      sessionToken: process.env.SESSION_TOKEN,
+    },
+  });
+  const command = new ListBucketsCommand({});
+  const res = await client.send(command);
+  console.log('aws response');
+  console.log(res);
 }
 
 function axiosCall() {
