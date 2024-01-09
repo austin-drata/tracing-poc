@@ -3,6 +3,7 @@ import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { Resource } from "@opentelemetry/resources";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ConsoleSpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
@@ -22,9 +23,32 @@ export const getTracer = () => {
   registerInstrumentations({
     instrumentations: [
         new ExpressInstrumentation(),
-      new HttpInstrumentation(),
+        new HttpInstrumentation(),
     ],
   });
 
   return opentelemetry.trace.getTracer('http-example');
 };
+
+export const getTracerSdk = () => {
+    const resource = new Resource({
+        [SemanticResourceAttributes.SERVICE_NAME]: process.env.DD_SERVICE,
+    });
+
+    const exporter = new ConsoleSpanExporter();
+
+    const sdk = new NodeSDK({
+      traceExporter: exporter,
+      resource,
+      instrumentations: [
+        new ExpressInstrumentation(),
+        new HttpInstrumentation(),
+      ],
+      spanProcessor: new SimpleSpanProcessor(exporter),
+    });
+
+    return {
+        sdk,
+        tracer: opentelemetry.trace.getTracer('http-example-sdk')
+    }
+}
