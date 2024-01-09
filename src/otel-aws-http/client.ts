@@ -1,20 +1,18 @@
 import { getTracerSdk } from "./tracer";
-// const tracer = getTracer();
-const {sdk, tracer} = getTracerSdk();
+const { sdk, tracer } = getTracerSdk();
 
 import { Span } from "@opentelemetry/api";
-import http from 'http';
+import axios from 'axios';
 
 
 const makeRequest = async () => {
     await sdk.start();
     await tracer.startActiveSpan('parent-span', async (parentSpan: Span) => {
-        const request = http.get('http://localhost:3001', (response: any) => {
-            console.log('response');
-            console.log(response.statusCode);
-        });
-        console.log('headers');
-        console.log(request.getHeaders())
+        const response = await axios.get('http://localhost:3001');
+        
+        console.log('response from express app');
+        console.log(response.status);
+
         parentSpan.end();
     });
 
