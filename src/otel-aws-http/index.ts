@@ -33,10 +33,12 @@ app.get('/', async (req, res) => {
     console.log(awsResponse.$metadata);
     span.end();
     res.end('giggity')
-  });
-  
-  await sdk.shutdown();  
+  });  
 });
+
+process.on('SIGTERM', async () => {
+  await sdk.shutdown();
+})
 
 app.listen(3001, async () => {
   await sdk.start();
