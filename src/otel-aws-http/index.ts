@@ -1,6 +1,7 @@
 import { getTracerSdk } from './tracer';
 const { sdk, tracer } = getTracerSdk();
 
+import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
 import { Span, trace } from '@opentelemetry/api';
 import axios from 'axios';
 import { config } from 'dotenv';
@@ -21,6 +22,15 @@ app.get('/', async (req, res) => {
 
     console.log('swapi response');
     console.log(response.status);
+
+    const client = new S3Client({
+      region: 'us-west-2',
+    });
+  
+    const command = new ListBucketsCommand({});
+    const awsResponse = await client.send(command);
+    console.log('aws response server');
+    console.log(awsResponse.$metadata);
     span.end();
     res.end('giggity')
   });
