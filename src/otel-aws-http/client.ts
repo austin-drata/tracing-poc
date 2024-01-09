@@ -1,6 +1,7 @@
 import { getTracerSdk } from "./tracer";
 const { sdk, tracer } = getTracerSdk();
 
+import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
 import { Span } from "@opentelemetry/api";
 import axios from 'axios';
 
@@ -12,6 +13,15 @@ const makeRequest = async () => {
         
         console.log('response from express app');
         console.log(response.status);
+
+        const client = new S3Client({
+            region: 'us-west-2',
+        });
+        
+        const command = new ListBucketsCommand({});
+        const awsResponse = await client.send(command);
+        console.log('aws response');
+        console.log(awsResponse.$metadata);
 
         parentSpan.end();
     });

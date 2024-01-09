@@ -1,5 +1,6 @@
 import opentelemetry from "@opentelemetry/api";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
+import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { Resource } from "@opentelemetry/resources";
@@ -41,6 +42,7 @@ export const getTracerSdk = () => {
       traceExporter: exporter,
       resource,
       instrumentations: [
+        new AwsInstrumentation({ suppressInternalInstrumentation: true }),
         new ExpressInstrumentation(),
         new HttpInstrumentation(),
       ],
