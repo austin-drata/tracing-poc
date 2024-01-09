@@ -1,144 +1,138 @@
-import { Span, context, trace } from '@opentelemetry/api';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import http from 'http';
-import https from 'https';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { getTracer } from './tracer';
+const tracer = getTracer();
+
+import { Span, trace } from '@opentelemetry/api';
 import { config } from 'dotenv';
-import axios from 'axios';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
-import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
+import express from 'express';
+import http from 'http';
 
 config({ path: './.env' });
-const resource = new Resource({
-  [SemanticResourceAttributes.SERVICE_NAME]: process.env.DD_SERVICE,
-});
-
-// const exporter = new OTLPTraceExporter({
-//   url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + '/v1/traces',
-//   headers: {
-//     'DD-API-KEY': process.env.DD_API_KEY,
-//   },
+// const resource = new Resource({
+//   [SemanticResourceAttributes.SERVICE_NAME]: process.env.DD_SERVICE,
 // });
 
-const exporter = new ConsoleSpanExporter();
+// // const exporter = new OTLPTraceExporter({
+// //   url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + '/v1/traces',
+// //   headers: {
+// //     'DD-API-KEY': process.env.DD_API_KEY,
+// //   },
+// // });
 
-// const provider = new NodeTracerProvider({
-//   resource: new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: 'fruits' })
-// });
+// const exporter = new ConsoleSpanExporter();
 
-// registerInstrumentations({
-//   instrumentations: [
-//     // Currently to be able to have auto-instrumentation for express
-//     // We need the auto-instrumentation for HTTP.
-//     new HttpInstrumentation(),
-//     new ExpressInstrumentation(),
-//     new PgInstrumentation()
-//   ]
-// });
-// provider.addSpanProcessor(new SimpleSpanProcessor(traceExporter));
+// // const otel = new NodeSDK({
+// //   traceExporter: exporter,
+// //   resource,
+// //   instrumentations: [
+// //     new HttpInstrumentation(),
+// //     new AwsInstrumentation(),
+// //   ],
+// //   spanProcessor: new BatchSpanProcessor(exporter),
+// // });
+
+// const provider = new NodeTracerProvider();
+
+// provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
 // provider.register();
 
-const otel = new NodeSDK({
-  traceExporter: exporter,
-  resource,
-  instrumentations: [
-    new HttpInstrumentation(),
-    new ExpressInstrumentation(),
-    new AwsInstrumentation({
-      suppressInternalInstrumentation: true,
-    }),
-  ],
-  spanProcessor: new BatchSpanProcessor(exporter),
-});
+// registerInstrumentations({
+//   instrumentations: [new HttpInstrumentation()],
+// });
 
-async function main() {
-  await otel.start();
-  const tracer = trace.getTracer('example-tracer');
+// const tracer = trace.getTracer('example-tracer');
 
-  // const rootSpan = tracer.startSpan('root-span');
-  await sleep(5000);
 
-  // await tracer.startActiveSpan('parent-span', async (parentSpan: Span) => {
-  // console.log('context with parent span')
-  // console.log(context.active())
 
-  await sleep(sleepTime);
+const app = express();
+app.use(express.json());
+app.get('/', async (req, res) => {
+  const currentSpan = trace.getActiveSpan();
+  console.log({ traceId: currentSpan?.spanContext().traceId });
 
-  // axiosCall();
+  tracer.startActiveSpan('express-span', { kind: 1, attributes: { boo: 'yah' }}, (span: Span) => {
+    span.addEvent('handling axios');
 
-  // await tracer.startActiveSpan('child-span', async childSpan => {
-  httpCall();
-  // console.log('childSpan')
-  // // console.log(childSpan);
-  // console.log('context after child span')
-  // console.log(context.active())
-  await sleep(sleepTime);
-  //   childSpan.end()
-  // })
-
-  // parentSpan.end()
-  // });
-
-  const respon = await awsCall();
-  console.log(respon);
-
-  // const ctxWithRootSpan = trace.setSpan(context.active(), rootSpan);
-  // const childSpan = tracer.startSpan('child-span', {}, ctxWithRootSpan);
-
-  await sleep(5000);
-
-  // childSpan.end();
-  // rootSpan.end();
-
-  await otel.shutdown();
-}
-
-const sleepTime = 1000;
-
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function httpCall() {
-  https.get('https://swapi.dev/api/people/1', (response) => {
-    console.log(response);
-  });
-}
-
-async function awsCall() {
-  const client = new S3Client({
-    region: 'us-west-2',
-    credentials: {
-      accessKeyId: process.env.ACCESS_KEY_ID,
-      secretAccessKey: process.env.SECRET_ACCESSS_KEY,
-      sessionToken: process.env.SESSION_TOKEN,
-    },
-  });
-  const command = new ListBucketsCommand({});
-  const res = await client.send(command);
-  console.log('aws response');
-  console.log(res);
-}
-
-function axiosCall() {
-  axios
-    .get('https://swapi.dev/api/people/1')
-    .then(function (response) {
+    http.get('http://swapi.dev/api/people/1', function (response) {
       // handle success
-      // console.log(response);
-    })
-    .catch(function (error) {
-      // handle error
-      console.log(error);
-    })
-    .finally(function () {
-      // always executed
-    });
-}
+      console.log('swapi response');
+      console.log(response.statusCode);
+      })
+        span.end();
+        res.end('giggity')
+      });
 
-main().catch((err) => console.log(err));
+  });
+
+// async function main() {
+//   // await otel.start();
+
+//   const rootSpan = tracer.startSpan('root-span');
+
+//   rootSpan.addEvent('httpCall');
+//   await axios
+//     .get('https://swapi.dev/api/people/1')
+//     .then(function (response) {
+//       // handle success
+//       console.log('swapi response');
+//     })
+//     .catch(function (error) {
+//       // handle error
+//       console.log(error);
+//     })
+//     .finally(function () {
+//       // always executed
+//     });
+
+//   rootSpan.addEvent('awsCall');
+//   await awsCall();
+
+//   rootSpan.end();  
+
+//   // await otel.shutdown();
+// }
+
+// const sleepTime = 1000;
+
+// async function sleep(ms: number) {
+//   return new Promise((resolve) => setTimeout(resolve, ms));
+// }
+
+// function httpCall() {
+//   https.get('https://swapi.dev/api/people/1', (response) => {
+//     console.log('swapi');
+//     // console.log(response);
+//   });
+// }
+
+// async function awsCall() {
+//   const client = new S3Client({
+//     region: 'us-west-2',
+//   });
+//   const command = new ListBucketsCommand({});
+//   const res = await client.send(command);
+//   console.log('aws response');
+//   // console.log(res);
+// }
+
+// function axiosCall() {
+//   axios
+//     .get('https://swapi.dev/api/people/1')
+//     .then(function (response) {
+//       // handle success
+//       // console.log(response);
+//     })
+//     .catch(function (error) {
+//       // handle error
+//       console.log(error);
+//     })
+//     .finally(function () {
+//       // always executed
+//     });
+// }
+
+// main().catch((err) => console.log(err));
+
+app.listen(3001, () => {
+
+  console.log('running on 3001')
+})
