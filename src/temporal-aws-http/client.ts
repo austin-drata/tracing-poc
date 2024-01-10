@@ -1,50 +1,16 @@
-import { Connection, Client } from '@temporalio/client';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
-import { NodeSDK } from '@opentelemetry/sdk-node';
+import { getTracerSdk } from './tracer';
+const { sdk, tracer } = getTracerSdk();
+
+import { Client, Connection } from '@temporalio/client';
 import { OpenTelemetryWorkflowClientInterceptor } from '@temporalio/interceptors-opentelemetry';
 import { example } from './workflows';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
-import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 
 import { config } from 'dotenv';
 config({ path: './.env' });
 
 async function run() {
-  const resource = new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'temporal-client',
-  });
-  
-  // Export spans to console for simplicity
-  // const exporter = new ConsoleSpanExporter();
-  const exporter = new OTLPTraceExporter({
-    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + '/v1/traces',
-    headers: {
-      'DD-API-KEY': process.env.DD_API_KEY,
-    },
-  });
+  await sdk.start();
 
-  const spanProcessor = new BatchSpanProcessor(exporter);
-
-  // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
-
-  const otel = new NodeSDK({
-    traceExporter: exporter,
-    resource,
-    instrumentations: [
-      // new HttpInstrumentation(),
-      // new ExpressInstrumentation(),
-      new AwsInstrumentation({
-        suppressInternalInstrumentation: true,
-      }),
-    ],
-    spanProcessor,
-  });
-  await otel.start();
   // Connect to localhost with default ConnectionOptions,
   // pass options to the Connection constructor to configure TLS and other settings.
   const connection = await Connection.connect();
@@ -61,9 +27,10 @@ async function run() {
       workflowId: 'otel-example-0',
       args: ['Temporal'],
     });
-    console.log(result); // Hello, Temporal!
+    console.log(result);
+    // Hello, Temporal!
   } finally {
-    await otel.shutdown();
+    await sdk.shutdown();
   }
 }
 

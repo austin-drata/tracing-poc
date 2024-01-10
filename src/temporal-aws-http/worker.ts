@@ -1,60 +1,18 @@
-import { DefaultLogger, Worker, Runtime, defaultSinks } from '@temporalio/worker';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
-import { NodeSDK } from '@opentelemetry/sdk-node';
+import { getTracerSdk } from './tracer';
+const { sdk, tracer, exporter, resource } = getTracerSdk();
+
 import {
   OpenTelemetryActivityInboundInterceptor,
   makeWorkflowExporter,
 } from '@temporalio/interceptors-opentelemetry/lib/worker';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { DefaultLogger, Runtime, Worker, defaultSinks } from '@temporalio/worker';
 import * as activities from './activities';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
-import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
 
 import { config } from 'dotenv';
 config({ path: './.env' });
 
 async function main() {
-  const resource = new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'temporal-worker',
-  });
-  // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
-  // Export spans to console for simplicity
-  // const exporter = new ConsoleSpanExporter();
-  const exporter = new OTLPTraceExporter({
-    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + '/v1/traces',
-    headers: {
-      'DD-API-KEY': process.env.DD_API_KEY,
-    },
-  });
-
-  const spanProcessor = new BatchSpanProcessor(exporter);
-
-  const otel = new NodeSDK({
-    traceExporter: exporter,
-    resource,
-    textMapPropagator: new AWSXRayPropagator(),
-    instrumentations: [
-      getNodeAutoInstrumentations({
-        '@opentelemetry/instrumentation-http': {},
-        // new HttpInstrumentation(),
-        // new ExpressInstrumentation(),
-        '@opentelemetry/instrumentation-aws-sdk': {},
-        // new AwsInstrumentation({
-        //   suppressInternalInstrumentation: true,
-        // }),
-      }),
-    ],
-
-    spanProcessor,
-  });
-  await otel.start();
-
+  await sdk.start();
   // Silence the Worker logs to better see the span output in this sample
   Runtime.install({ logger: new DefaultLogger('WARN') });
 
@@ -78,7 +36,7 @@ async function main() {
   try {
     await worker.run();
   } finally {
-    await otel.shutdown();
+    await sdk.shutdown();
   }
 }
 
