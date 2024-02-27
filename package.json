@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "trace.temporal": "ts-node src/temporal-aws-http/client.ts",
     "worker.trace.temporal": "ts-node src/temporal-aws-http/worker.ts",
-    "trace": "ts-node src/otel-aws-http/index.ts",
+    "trace": "nodemon src/otel-aws-http/index.ts",
     "trace.watch": "nodemon src/otel-aws-http/index.ts",
     "trace.temporal.watch": "nodemon src/temporal-aws-http/worker.ts"
   },
