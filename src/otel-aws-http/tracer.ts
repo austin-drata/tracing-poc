@@ -14,9 +14,7 @@ export const getTracerSdk = () => {
   });
 
   // const exporter = new ConsoleSpanExporter();
-  const exporter = new OTLPTraceExporter({
-    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT 
-  });
+  const exporter = new OTLPTraceExporter();
 
   const sdk = new NodeSDK({
     traceExporter: exporter,

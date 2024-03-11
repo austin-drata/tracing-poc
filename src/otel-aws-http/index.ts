@@ -2,6 +2,7 @@ import { getTracerSdk } from './tracer';
 const { sdk, tracer } = getTracerSdk();
 
 import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3';
+import { DynamoDBClient, ListTablesCommand } from '@aws-sdk/client-dynamodb';
 import { Span, trace } from '@opentelemetry/api';
 import axios from 'axios';
 import { config } from 'dotenv';
@@ -15,7 +16,7 @@ app.get('/', async (req, res) => {
   const currentSpan = trace.getActiveSpan();
   console.log({ traceId: currentSpan?.spanContext().traceId });
 
-  await tracer.startActiveSpan('express-span', { kind: 1, attributes: { boo: 'yah' }}, async (span: Span) => {
+  await tracer.startActiveSpan('express-span', { kind: 1, attributes: { boo: 'yah' } }, async (span: Span) => {
     span.addEvent('handling axios');
 
     const response = await axios.get('http://swapi.dev/api/people/1');
@@ -26,21 +27,28 @@ app.get('/', async (req, res) => {
     const client = new S3Client({
       region: 'us-west-2',
     });
-  
+
     const command = new ListBucketsCommand({});
     const awsResponse = await client.send(command);
     console.log('aws response server');
     console.log(awsResponse.$metadata);
+
+    // const dynamoClient = new DynamoDBClient({ region: 'us-west-2' });
+    // const command2 = new ListTablesCommand({});
+    // const res2 = await dynamoClient.send(command2);
+    // console.log('aws dynamo response');
+    // console.log(res2);
+
     span.end();
-    res.end('giggity')
-  });  
+    res.end('giggity');
+  });
 });
 
 process.on('SIGTERM', async () => {
   await sdk.shutdown();
-})
+});
 
 app.listen(3001, async () => {
   await sdk.start();
-  console.log('running on 3001')
-})
+  console.log('running on 3001');
+});
